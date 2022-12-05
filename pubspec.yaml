@@ -35,7 +35,7 @@ flutter:
   plugin:
     platforms:
       android:
-        package: com.example.espblufiforflutter
+        package: moe.uuu.espblufiforflutter
         pluginClass: EspblufiforflutterPlugin
       ios:
         pluginClass: EspblufiforflutterPlugin

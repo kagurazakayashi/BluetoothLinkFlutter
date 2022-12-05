@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.espblufiforflutter_example">
+    package="moe.uuu.espblufiforflutter_example">
    <application
         android:label="espblufiforflutter_example"
         android:name="${applicationName}"
