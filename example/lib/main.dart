@@ -15,13 +15,14 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
+class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegate {
+  String _platformVersion = '';
   final _espblufiforflutterPlugin = Espblufiforflutter();
 
   @override
   void initState() {
     super.initState();
+    _espblufiforflutterPlugin.delegateVersion = this;
     initPlatformState();
   }
 
@@ -31,8 +32,7 @@ class _MyAppState extends State<MyApp> {
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
     try {
-      platformVersion =
-          await _espblufiforflutterPlugin.getPlatformVersion() ?? 'Unknown platform version';
+      platformVersion = await _espblufiforflutterPlugin.getPlatformVersion() ?? 'Unknown platform version';
     } on PlatformException {
       platformVersion = 'Failed to get platform version.';
     }
@@ -43,7 +43,7 @@ class _MyAppState extends State<MyApp> {
     if (!mounted) return;
 
     setState(() {
-      _platformVersion = platformVersion;
+      _platformVersion += platformVersion;
     });
   }
 
@@ -59,5 +59,12 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
     );
+  }
+
+  @override
+  espblufiforflutterVersionDelegate(Object? info) {
+    setState(() {
+      _platformVersion += info.toString();
+    });
   }
 }
