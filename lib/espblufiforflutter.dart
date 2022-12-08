@@ -24,6 +24,9 @@ class Espblufiforflutter {
 
   // 【非同步】收到原生隨時發來的通知，event 是原生傳回來的資料
   eventChannelData(event) {
+    // print("== native ==");
+    // print(event);
+    // print("== /native ==");
     // 可以是 Map 也可以是 String 等其他
     Map arguments = event;
     if (delegateVersion == null) {
