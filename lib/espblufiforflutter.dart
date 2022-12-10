@@ -24,9 +24,9 @@ class Espblufiforflutter {
 
   // 【非同步】收到原生隨時發來的通知，event 是原生傳回來的資料
   eventChannelData(event) {
-    // print("== native ==");
-    // print(event);
-    // print("== /native ==");
+    print("== native ==");
+    print(event);
+    print("== /native ==");
     // 可以是 Map 也可以是 String 等其他
     Map arguments = event;
     if (delegateVersion == null) {
@@ -45,7 +45,8 @@ class Espblufiforflutter {
   Future<Map?> getPlatformVersion() async {
     // 可以是 Map 也可以是 String 等其他
     // 【同步】await 是等待它執行結束，直接拿到原生的返回值
-    final Map? info = await _methodChannel.invokeMethod('getPlatformVersion');
+    // final Map? info = await _methodChannel.invokeMethod('getPlatformVersion');
+    final Map? info = await _methodChannel.invokeMethod('scan_bt_devices');
     return info;
   }
 }
