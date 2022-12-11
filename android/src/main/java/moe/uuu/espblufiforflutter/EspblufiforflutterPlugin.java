@@ -17,9 +17,15 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -42,28 +48,31 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
 
     // 接收來自 Flutter 的通知，可以回覆該通知
     private MethodChannel methodChannel;
-    // 可以隨時傳送的通知
-    private EventChannel eventChannel;
     private EventChannel.EventSink eventChannelSink = null;
 
-    private Map<String, ScanResult> mDeviceMap;
+    private final Map<String, ScanResult> mDeviceMap;
     private volatile long mScanStartTime;
-    private ScanCallback mScanCallback;
+    private final ScanCallback mScanCallback;
     private Future<Boolean> mUpdateFuture;
-    private ExecutorService mThreadPool;
+    private final ExecutorService mThreadPool;
 
-    private long scanTimeout = 4000L;
-    private Map<String, String> returnVal;
+    private final long scanTimeout = 4000L;
+    private final Map<String, Object> returnVal;
 
-    private Handler handler = new Handler(Looper.getMainLooper()) {
+    // 接收子執行緒發來的資訊
+    private final Handler handler = new Handler(Looper.getMainLooper()) {
         @Override
         public void handleMessage(Message msg) {
-            // TODO:11111
+            returnVal.clear();
+            returnVal.put("k", "scan_bt_devices");
             if (msg.what == 1) {
-
+                // 搜尋到的各個藍芽裝置 (JSON)
+                returnVal.put("t", "list");
+            } else if (msg.what == 2) {
+                // 狀態變化 (String)
+                returnVal.put("t", "stat");
             }
-
-            returnVal.put("v", msg.getData().getString("key"));
+            returnVal.put("v", msg.getData().getString("v"));
             eventChannelSink.success(returnVal);
         }
     };
@@ -71,7 +80,7 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
     public EspblufiforflutterPlugin() {
         mDeviceMap = new HashMap<>();
         returnVal = new HashMap<>();
-            mScanCallback = new ScanCallback();
+        mScanCallback = new ScanCallback();
         mThreadPool = Executors.newSingleThreadExecutor();
     }
 
@@ -80,7 +89,8 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
     public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
         methodChannel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "flutter_to_native");
         methodChannel.setMethodCallHandler(this);
-        eventChannel = new EventChannel(flutterPluginBinding.getBinaryMessenger(), "native_to_flutter");
+        // 可以隨時傳送的通知
+        EventChannel eventChannel = new EventChannel(flutterPluginBinding.getBinaryMessenger(), "native_to_flutter");
         eventChannel.setStreamHandler(this);
     }
 
@@ -92,17 +102,16 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
         if (method.equals("getPlatformVersion")) {
             returnVal.clear();
             returnVal.put("k", "getPlatformVersion");
-            returnVal.put("f", "result");
+            returnVal.put("t", "result");
             returnVal.put("v", android.os.Build.VERSION.RELEASE);
             result.success(returnVal);
             pushPlatformVersion();
         } else if (method.equals("scan_bt_devices")) {
             returnVal.clear();
             returnVal.put("k", "scan_bt_devices");
-            returnVal.put("f", "start");
-            returnVal.put("v", "");
+            returnVal.put("t", "start");
+            returnVal.put("v", scan());
             result.success(returnVal);
-            scan();
         } else {
             result.notImplemented();
         }
@@ -112,7 +121,7 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
     private void pushPlatformVersion() {
         returnVal.clear();
         returnVal.put("k", "getPlatformVersion");
-        returnVal.put("f", "event");
+        returnVal.put("t", "event");
         returnVal.put("v", android.os.Build.VERSION.RELEASE);
         // 將資料返回給 Flutter ，可以是 Map 也可以是 String 等其他。
         // 注意用 EventChannel.EventSink 不是 EventChannel 型別。
@@ -140,29 +149,45 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
 
     // 蓝牙实现部分
 
+    //    扫描蓝牙设备时执行，会在扫描过程中执行多次
     private void onIntervalScanUpdate(boolean over) {
         Log.i("BT", "onIntervalScanUpdate");
         List<ScanResult> devices = new ArrayList<>(mDeviceMap.values());
         Collections.sort(devices, (dev1, dev2) -> {
 //            Log.i("BT", "devices");
             Integer rssi1 = null;
-                rssi1 = dev1.getRssi();
+            rssi1 = dev1.getRssi();
             Integer rssi2 = null;
-                rssi2 = dev2.getRssi();
+            rssi2 = dev2.getRssi();
             return rssi2.compareTo(rssi1);
         });
-
-        Log.i("BT", "devices:" + devices.size());
-        Log.i("BT", devices.toString());
-
+        List<Map<String, String>> btinfos = new LinkedList<>();
+        for (ScanResult device : devices) {
+            Map<String, String> btinfo = new LinkedHashMap();
+            android.bluetooth.BluetoothDevice deviceInfo = device.getDevice();
+            btinfo.put("name", deviceInfo.getName());
+            btinfo.put("address", deviceInfo.getAddress());
+            btinfo.put("rssi", String.valueOf(device.getRssi()));
+            btinfo.put("type", String.valueOf(deviceInfo.getType()));
+            btinfo.put("bondState", String.valueOf(deviceInfo.getBondState()));
+            btinfo.put("uuids", Arrays.toString(deviceInfo.getUuids()));
+            btinfo.put("class", String.valueOf(deviceInfo.getBluetoothClass()));
+//            btinfo.put("manufacturer", String.valueOf(deviceInfo.getManufacturerSpecificData()));
+//            btinfo.put("serviceData", String.valueOf(deviceInfo.getServiceData()));
+//            btinfo.put("serviceUuids", String.valueOf(deviceInfo.getServiceUuids()));
+//            btinfo.put("txPowerLevel", String.valueOf(deviceInfo.getTxPowerLevel()));
+            btinfo.put("describeContents", String.valueOf(deviceInfo.describeContents()));
+            btinfo.put("hashCode", String.valueOf(deviceInfo.hashCode()));
+//            btinfo.put("toString", String.valueOf(deviceInfo.toString()));
+            btinfos.add(btinfo);
+        }
+        JSONArray jsonArray = new JSONArray(btinfos);
         Message message = new Message();
+        message.what = 1;
         Bundle bundle = new Bundle();
-        bundle.putString("key", "555");
+        bundle.putString("v", jsonArray.toString());
         message.setData(bundle);
         handler.sendMessage(message);
-        returnVal.put("k", "scan_bt_devices");
-        returnVal.put("t", "dev");
-        returnVal.put("v", devices.toString());
 //        runOnUiThread(() -> {
 //            mBleList.clear();
 //            mBleList.addAll(devices);
@@ -175,24 +200,19 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
     }
 
     private void returnError(String error) {
-        returnVal.put("k", "scan_bt_devices");
-        returnVal.put("t", "stat");
-        returnVal.put("v", error);
-        eventChannelSink.success(returnVal);
+        Message message = new Message();
+        message.what = 2;
+        Bundle bundle = new Bundle();
+        bundle.putString("v", error);
+        message.setData(bundle);
+        handler.sendMessage(message);
     }
 
     private String scan() {
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         BluetoothLeScanner scanner = null;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            scanner = adapter.getBluetoothLeScanner();
-        } else {
-            Log.i("[BT]", "os_var_low"); // 系統版本過低
-            return "os_var_low";
-        }
+        scanner = adapter.getBluetoothLeScanner();
         if (!adapter.isEnabled() || scanner == null) {
-            Log.i("[BT]", "main_bt_disable_msg"); // 藍芽不可用
-//            mBinding.refreshLayout.setRefreshing(false);
             return "main_bt_disable_msg";
         }
 
@@ -212,7 +232,6 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
 //        mBlufiFilter = (String) BlufiApp.getInstance().settingsGet(SettingsConstants.PREF_SETTINGS_KEY_BLE_PREFIX,
 //                BlufiConstants.BLUFI_PREFIX);
         mScanStartTime = SystemClock.elapsedRealtime();
-        Log.i("[BT]", "start_scan_ble"); // 開始搜尋藍芽裝置
         scanner.startScan(null, new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(), mScanCallback);
         mUpdateFuture = mThreadPool.submit(() -> {
             while (!Thread.currentThread().isInterrupted()) {
@@ -236,7 +255,6 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
                 inScanner.stopScan(mScanCallback);
             }
             onIntervalScanUpdate(true);
-            Log.i("[BT]", "thread_interrupted"); // 掃描執行緒中斷
             returnError("thread_interrupted");
             return true;
         });
@@ -246,9 +264,9 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
     private void stopScan() {
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         BluetoothLeScanner scanner = null;
-            scanner = adapter.getBluetoothLeScanner();
+        scanner = adapter.getBluetoothLeScanner();
         if (scanner != null) {
-                scanner.stopScan(mScanCallback);
+            scanner.stopScan(mScanCallback);
         }
         if (mUpdateFuture != null) {
             mUpdateFuture.cancel(true);
