@@ -50,7 +50,7 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
     private MethodChannel methodChannel;
     private EventChannel.EventSink eventChannelSink = null;
 
-    private final Map<String, ScanResult> mDeviceMap;
+    private final List<ScanResult> devices;
     private volatile long mScanStartTime;
     private final ScanCallback mScanCallback;
     private Future<Boolean> mUpdateFuture;
@@ -78,7 +78,7 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
     };
 
     public EspblufiforflutterPlugin() {
-        mDeviceMap = new HashMap<>();
+        devices = new ArrayList<>();
         returnVal = new HashMap<>();
         mScanCallback = new ScanCallback();
         mThreadPool = Executors.newSingleThreadExecutor();
@@ -109,8 +109,12 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
         } else if (method.equals("scan_bt_devices")) {
             returnVal.clear();
             returnVal.put("k", "scan_bt_devices");
-            returnVal.put("t", "start");
             returnVal.put("v", scan());
+            result.success(returnVal);
+        } else if (method.equals("stop_scan_ble")) {
+            returnVal.clear();
+            returnVal.put("k", "stop_scan_ble");
+            returnVal.put("v", stopScan());
             result.success(returnVal);
         } else {
             result.notImplemented();
@@ -137,7 +141,6 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
     @Override
     // eventChannelSink
     public void onListen(Object arguments, EventChannel.EventSink events) {
-        Log.i("BT", "onListen");
         eventChannelSink = events;
     }
 
@@ -149,12 +152,9 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
 
     // 蓝牙实现部分
 
-    //    扫描蓝牙设备时执行，会在扫描过程中执行多次
+    // 扫描蓝牙设备时执行，会在扫描过程中执行多次
     private void onIntervalScanUpdate(boolean over) {
-        Log.i("BT", "onIntervalScanUpdate");
-        List<ScanResult> devices = new ArrayList<>(mDeviceMap.values());
         Collections.sort(devices, (dev1, dev2) -> {
-//            Log.i("BT", "devices");
             Integer rssi1 = null;
             rssi1 = dev1.getRssi();
             Integer rssi2 = null;
@@ -227,7 +227,7 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
 ////            }
 //        }
 
-        mDeviceMap.clear();
+        devices.clear();
 //        mBleAdapter.notifyDataSetChanged();
 //        mBlufiFilter = (String) BlufiApp.getInstance().settingsGet(SettingsConstants.PREF_SETTINGS_KEY_BLE_PREFIX,
 //                BlufiConstants.BLUFI_PREFIX);
@@ -261,18 +261,17 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
         return "start_scan_ble"; // 開始掃描
     }
 
-    private void stopScan() {
+    // 停止藍芽掃描
+    private String stopScan() {
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-        BluetoothLeScanner scanner = null;
-        scanner = adapter.getBluetoothLeScanner();
+        BluetoothLeScanner scanner = adapter.getBluetoothLeScanner();
         if (scanner != null) {
             scanner.stopScan(mScanCallback);
         }
         if (mUpdateFuture != null) {
             mUpdateFuture.cancel(true);
         }
-        Log.i("[BT]", "stop_scan_ble");
-        returnError("stop_scan_ble");
+        return "stop_scan_ble"; // 停止掃描
     }
 
     public class ScanCallback extends android.bluetooth.le.ScanCallback {
@@ -300,7 +299,14 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
 //                    return;
 //                }
 //            }
-            mDeviceMap.put(scanResult.getDevice().getAddress(), scanResult);
+            devices.add(scanResult);
+
+            Message message = new Message();
+            message.what = 1;
+            Bundle bundle = new Bundle();
+            bundle.putString("v", jsonArray.toString());
+            message.setData(bundle);
+            handler.sendMessage(message);
         }
     }
 }
