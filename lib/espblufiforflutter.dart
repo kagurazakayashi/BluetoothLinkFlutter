@@ -46,7 +46,9 @@ class Espblufiforflutter {
     // 可以是 Map 也可以是 String 等其他
     // 【同步】await 是等待它執行結束，直接拿到原生的返回值
     // final Map? info = await _methodChannel.invokeMethod('getPlatformVersion');
-    final Map? info = await _methodChannel.invokeMethod('scan_bt_devices');
+    final Map? info = await _methodChannel.invokeMethod('scan_bt_devices', {
+      "timeout": "10000",
+    });
     return info;
   }
 }
