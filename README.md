@@ -26,7 +26,11 @@ Flutter APP 与乐鑫 ESP8266/ESP32 蓝牙设备通信插件。
 
 ### 扫描蓝牙设备列表
 
-- 发送: Flutter -> `scan_bt_devices` -> `Map(timeout=scan_bt_devices,v=值)` -> `methodChannel` -> Native
+- 发送: Flutter -> `scan_bt_devices` -> `Map<String,String>` -> `methodChannel` -> Native
+  - `Map<String,String>` 可选参数：
+    - `timeout` (Long): 蓝牙搜索超时时间（毫秒，默认10秒）
+    - `interval` (Long): 返回数据间隔时间（毫秒，默认1秒）
+    - `real` (Boolean): 是否实时返回扫描到的设备，默认false
 - 接收: 
   - Native -> `methodChannel` -> `Map(k=scan_bt_devices,v=值)` -> Flutter
     - `v=` 可能的值：
@@ -35,7 +39,7 @@ Flutter APP 与乐鑫 ESP8266/ESP32 蓝牙设备通信插件。
   - Native -> `eventChannel` -> `Map(k=scan_bt_devices,t=状态,v=值,r=Bool)` -> Flutter
     - `t=` 可能的值：
       - `list`: v=蓝牙设备及其信息列表，每秒刷新(JSON)
-      - `scan`: v=实时扫描到的当前蓝牙设备及其信息(JSON)
+      - `real`: v=实时扫描到的当前蓝牙设备及其信息(JSON)
       - `stat`: v=扫描状态发生了变化。此时 `v=` 可能的值：
         - `thread_interrupted`: 扫描线程结束
         - `stop_scan_ble`: 扫描中止

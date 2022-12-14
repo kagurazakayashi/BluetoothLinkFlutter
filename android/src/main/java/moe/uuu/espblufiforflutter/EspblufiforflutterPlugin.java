@@ -57,7 +57,10 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
     private Future<Boolean> mUpdateFuture;
     private final ExecutorService mThreadPool;
 
-    private final long scanTimeout = 10000L;
+    private long scanTimeout = 10000L;
+    private long scanInterval = 1000L;
+    private boolean realCallback = false;
+
     private final Map<String, Object> returnVal;
 
     // 接收子執行緒發來的資訊
@@ -105,6 +108,7 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
     // 接收 Flutter 的通知，call.method 是通知名稱
     public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
         String method = call.method;
+        Map<String, String> arg = (Map<String, String>) call.arguments;
         if (method.equals("getPlatformVersion")) {
             returnVal.clear();
             returnVal.put("k", "getPlatformVersion");
@@ -113,6 +117,17 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
             result.success(returnVal);
             pushPlatformVersion();
         } else if (method.equals("scan_bt_devices")) {
+            if (arg != null) {
+                if (arg.containsKey("timeout")) {
+                    scanTimeout = Long.parseLong(Objects.requireNonNull(arg.get("timeout")));
+                }
+                if (arg.containsKey("interval")) {
+                    scanInterval = Long.parseLong(Objects.requireNonNull(arg.get("interval")));
+                }
+                if (arg.containsKey("real")) {
+                    realCallback = Boolean.parseBoolean(Objects.requireNonNull(arg.get("real")));
+                }
+            }
             returnVal.clear();
             returnVal.put("k", "scan_bt_devices");
             returnVal.put("v", scan());
@@ -181,6 +196,7 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
 
     /**
      * 將已掃描到的藍芽裝置資訊轉換為 JSON 字串
+     *
      * @return JSON 字串
      */
     private String devicesJSON(String onlyAddr) {
@@ -257,7 +273,7 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
         mUpdateFuture = mThreadPool.submit(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(scanInterval);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                     break;
@@ -323,12 +339,14 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
             String addr = scanResult.getDevice().getAddress();
             // 去重，所以用 Map
             mDeviceMap.put(addr, scanResult);
-            Message message = new Message();
-            message.what = 3;
-            Bundle bundle = new Bundle();
-            bundle.putString("v", devicesJSON(addr));
-            message.setData(bundle);
-//            handler.sendMessage(message);
+            if (realCallback) {
+                Message message = new Message();
+                message.what = 3;
+                Bundle bundle = new Bundle();
+                bundle.putString("v", devicesJSON(addr));
+                message.setData(bundle);
+                handler.sendMessage(message);
+            }
         }
     }
 }

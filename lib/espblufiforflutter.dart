@@ -46,8 +46,15 @@ class Espblufiforflutter {
     // 可以是 Map 也可以是 String 等其他
     // 【同步】await 是等待它執行結束，直接拿到原生的返回值
     // final Map? info = await _methodChannel.invokeMethod('getPlatformVersion');
+    /*
+    - `timeout` (Long): 藍芽搜尋超時時間（毫秒，預設10秒）
+    - `interval` (Long): 返回資料間隔時間（毫秒，預設1秒）
+    - `real` (Boolean): 是否實時返回掃描到的裝置，預設false
+    */
     final Map? info = await _methodChannel.invokeMethod('scan_bt_devices', {
       "timeout": "10000",
+      "interval": "1000",
+      "real": "false",
     });
     return info;
   }
