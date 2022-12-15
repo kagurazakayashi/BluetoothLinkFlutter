@@ -35,6 +35,7 @@ Flutter APP 与乐鑫 ESP8266/ESP32 蓝牙设备通信插件。
   - Native -> `methodChannel` -> `Map(k=scan_bt_devices,v=值)` -> Flutter
     - `v=` 可能的值：
       - `main_bt_disable_msg`: 蓝牙不可用
+      - `start_scan_ble_error`: 无法启动扫描，可能是没有权限
       - `start_scan_ble`: 开始扫描蓝牙设备
   - Native -> `eventChannel` -> `Map(k=scan_bt_devices,t=状态,v=值,r=Bool)` -> Flutter
     - `t=` 可能的值：
@@ -44,6 +45,9 @@ Flutter APP 与乐鑫 ESP8266/ESP32 蓝牙设备通信插件。
         - `thread_interrupted`: 扫描线程结束
         - `stop_scan_ble`: 扫描中止
     - `r=` 布尔值：是否正在运行， false 为最终结果。
+  - 返回结果示例：
+    - `{r: true, c: 8981, t: list, v: [{"name":null,"address":"E9:E8:1C:53:82:00","rssi":"-87","type":"0","bondState":"10","uuids":"null","class":"0","describeContents":"0","hashCode":"-1765052277"},{"name":null,"address":"12:DE:7B:50:D1:00","rssi":"-95","type":"0","bondState":"10","uuids":"null","class":"0","describeContents":"0","hashCode":"1146831679"}] }`
+    - `{t: stat, v: thread_interrupted, k: scan_bt_devices}`
 
 ### 停止扫描蓝牙设备列表
 - 发送: Flutter -> `stop_scan_ble` -> `methodChannel` -> Native

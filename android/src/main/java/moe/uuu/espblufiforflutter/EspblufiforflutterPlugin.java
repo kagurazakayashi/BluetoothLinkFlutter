@@ -50,48 +50,9 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
     // 接收來自 Flutter 的通知，可以回覆該通知
     private MethodChannel methodChannel;
     private EventChannel.EventSink eventChannelSink = null;
-
-    private final Map<String, ScanResult> mDeviceMap;
-    private volatile long mScanStartTime;
-    private final ScanCallback mScanCallback;
-    private Future<Boolean> mUpdateFuture;
-    private final ExecutorService mThreadPool;
-
-    private long scanTimeout = 10000L;
-    private long scanInterval = 1000L;
-    private boolean realCallback = false;
-
-    private final Map<String, Object> returnVal;
-
-    // 接收子執行緒發來的資訊
-    private final Handler handler = new Handler(Looper.getMainLooper()) {
-        @Override
-        public void handleMessage(Message msg) {
-            android.os.Bundle bundle = msg.getData();
-            returnVal.clear();
-            returnVal.put("k", "scan_bt_devices");
-            if (msg.what == 1) {
-                // 搜尋到的各個藍芽裝置 (JSON)
-                returnVal.put("t", "list");
-                returnVal.put("r", !bundle.getBoolean("end"));
-                returnVal.put("c", bundle.getLong("time"));
-            } else if (msg.what == 2) {
-                // 狀態變化 (String)
-                returnVal.put("t", "stat");
-            } else if (msg.what == 3) {
-                // 搜尋到一個藍芽裝置 (JSON)
-                returnVal.put("t", "scan");
-            }
-            returnVal.put("v", bundle.getString("v"));
-            eventChannelSink.success(returnVal);
-        }
-    };
+    private BluScan bluScan = new BluScan();
 
     public EspblufiforflutterPlugin() {
-        mDeviceMap = new HashMap<>();
-        returnVal = new HashMap<>();
-        mScanCallback = new ScanCallback();
-        mThreadPool = Executors.newSingleThreadExecutor();
     }
 
     @Override
@@ -108,34 +69,26 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
     // 接收 Flutter 的通知，call.method 是通知名稱
     public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
         String method = call.method;
-        Map<String, String> arg = (Map<String, String>) call.arguments;
+        Map<String, String> arg = new HashMap<>();
+        if (call.arguments != null) {
+            arg = (Map<String, String>) call.arguments;
+        }
+        Map<String, Object> returnVal = new HashMap<>();
         if (method.equals("getPlatformVersion")) {
-            returnVal.clear();
             returnVal.put("k", "getPlatformVersion");
             returnVal.put("t", "result");
             returnVal.put("v", android.os.Build.VERSION.RELEASE);
             result.success(returnVal);
             pushPlatformVersion();
         } else if (method.equals("scan_bt_devices")) {
-            if (arg != null) {
-                if (arg.containsKey("timeout")) {
-                    scanTimeout = Long.parseLong(Objects.requireNonNull(arg.get("timeout")));
-                }
-                if (arg.containsKey("interval")) {
-                    scanInterval = Long.parseLong(Objects.requireNonNull(arg.get("interval")));
-                }
-                if (arg.containsKey("real")) {
-                    realCallback = Boolean.parseBoolean(Objects.requireNonNull(arg.get("real")));
-                }
-            }
-            returnVal.clear();
+            bluScan.config(arg);
             returnVal.put("k", "scan_bt_devices");
-            returnVal.put("v", scan());
+            returnVal.put("v", bluScan.scan());
             result.success(returnVal);
         } else if (method.equals("stop_scan_ble")) {
-            returnVal.clear();
+            bluScan.config(arg);
             returnVal.put("k", "stop_scan_ble");
-            returnVal.put("v", stopScan());
+            returnVal.put("v", bluScan.stopScan());
             result.success(returnVal);
         } else {
             result.notImplemented();
@@ -144,6 +97,7 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
 
     // 在其他地方可以直接返回資料的 eventChannel 通知
     private void pushPlatformVersion() {
+        Map<String, Object> returnVal = new HashMap<>();
         returnVal.clear();
         returnVal.put("k", "getPlatformVersion");
         returnVal.put("t", "event");
@@ -163,6 +117,7 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
     // eventChannelSink
     public void onListen(Object arguments, EventChannel.EventSink events) {
         eventChannelSink = events;
+        bluScan.eventChannelSink = events;
     }
 
     @Override
@@ -173,180 +128,5 @@ public class EspblufiforflutterPlugin implements FlutterPlugin, MethodCallHandle
 
     // 蓝牙实现部分
 
-    // 扫描蓝牙设备时执行，会在扫描过程中执行多次
-    private void onIntervalScanUpdate(boolean over, long scanCost) {
-        Message message = new Message();
-        message.what = 1;
-        Bundle bundle = new Bundle();
-        bundle.putString("v", devicesJSON(null));
-        bundle.putBoolean("end", over);
-        bundle.putLong("time", scanTimeout - scanCost);
-        message.setData(bundle);
-        handler.sendMessage(message);
-//        runOnUiThread(() -> {
-//            mBleList.clear();
-//            mBleList.addAll(devices);
-//            mBleAdapter.notifyDataSetChanged();
-//
-//            if (over) {
-//                mBinding.refreshLayout.setRefreshing(false);
-//            }
-//        });
-    }
 
-    /**
-     * 將已掃描到的藍芽裝置資訊轉換為 JSON 字串
-     *
-     * @return JSON 字串
-     */
-    private String devicesJSON(String onlyAddr) {
-//        Collections.sort(devices, (dev1, dev2) -> {
-//            Integer rssi1 = null;
-//            rssi1 = dev1.getRssi();
-//            Integer rssi2 = null;
-//            rssi2 = dev2.getRssi();
-//            return rssi2.compareTo(rssi1);
-//        });
-        List<Map<String, String>> btinfos = new LinkedList<>();
-        List<ScanResult> devices = new ArrayList<>(mDeviceMap.values());
-        for (ScanResult device : devices) {
-            Map<String, String> btinfo = new LinkedHashMap();
-            android.bluetooth.BluetoothDevice deviceInfo = device.getDevice();
-            String addr = deviceInfo.getAddress();
-            if (onlyAddr != null && !onlyAddr.equals(addr)) {
-                continue;
-            }
-            btinfo.put("name", deviceInfo.getName());
-            btinfo.put("address", addr);
-            btinfo.put("rssi", String.valueOf(device.getRssi()));
-            btinfo.put("type", String.valueOf(deviceInfo.getType()));
-            btinfo.put("bondState", String.valueOf(deviceInfo.getBondState()));
-            btinfo.put("uuids", Arrays.toString(deviceInfo.getUuids()));
-            btinfo.put("class", String.valueOf(deviceInfo.getBluetoothClass()));
-//            btinfo.put("manufacturer", String.valueOf(deviceInfo.getManufacturerSpecificData()));
-//            btinfo.put("serviceData", String.valueOf(deviceInfo.getServiceData()));
-//            btinfo.put("serviceUuids", String.valueOf(deviceInfo.getServiceUuids()));
-//            btinfo.put("txPowerLevel", String.valueOf(deviceInfo.getTxPowerLevel()));
-            btinfo.put("describeContents", String.valueOf(deviceInfo.describeContents()));
-            btinfo.put("hashCode", String.valueOf(deviceInfo.hashCode()));
-//            btinfo.put("toString", String.valueOf(deviceInfo.toString()));
-            btinfos.add(btinfo);
-        }
-        JSONArray jsonArray = new JSONArray(btinfos);
-        return jsonArray.toString();
-    }
-
-    private void returnError(String error) {
-        Message message = new Message();
-        message.what = 2;
-        Bundle bundle = new Bundle();
-        bundle.putString("v", error);
-        message.setData(bundle);
-        handler.sendMessage(message);
-    }
-
-    private String scan() {
-        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-        BluetoothLeScanner scanner = null;
-        scanner = adapter.getBluetoothLeScanner();
-        if (!adapter.isEnabled() || scanner == null) {
-            return "main_bt_disable_msg";
-        }
-
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//            // 檢查定位服務是否開啟
-//            LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-//            boolean locationEnable = locationManager != null && LocationManagerCompat.isLocationEnabled(locationManager);
-////            if (!locationEnable) {
-////                Toast.makeText(this, R.string.main_location_disable_msg, Toast.LENGTH_SHORT).show();
-////                mBinding.refreshLayout.setRefreshing(false);
-////                return;
-////            }
-//        }
-
-        mDeviceMap.clear();
-//        mBleAdapter.notifyDataSetChanged();
-//        mBlufiFilter = (String) BlufiApp.getInstance().settingsGet(SettingsConstants.PREF_SETTINGS_KEY_BLE_PREFIX,
-//                BlufiConstants.BLUFI_PREFIX);
-        mScanStartTime = SystemClock.elapsedRealtime();
-        scanner.startScan(null, new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(), mScanCallback);
-        mUpdateFuture = mThreadPool.submit(() -> {
-            while (!Thread.currentThread().isInterrupted()) {
-                try {
-                    Thread.sleep(scanInterval);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    break;
-                }
-
-                long scanCost = SystemClock.elapsedRealtime() - mScanStartTime;
-                if (scanCost > scanTimeout) {
-                    break;
-                }
-
-                onIntervalScanUpdate(false, scanCost);
-            }
-
-            BluetoothLeScanner inScanner = BluetoothAdapter.getDefaultAdapter().getBluetoothLeScanner();
-            if (inScanner != null) {
-                inScanner.stopScan(mScanCallback);
-            }
-            onIntervalScanUpdate(true, 0);
-            returnError("thread_interrupted");
-            return true;
-        });
-        return "start_scan_ble"; // 開始掃描
-    }
-
-    // 停止藍芽掃描
-    private String stopScan() {
-        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-        BluetoothLeScanner scanner = adapter.getBluetoothLeScanner();
-        if (scanner != null) {
-            scanner.stopScan(mScanCallback);
-        }
-        if (mUpdateFuture != null) {
-            mUpdateFuture.cancel(true);
-        }
-        return "stop_scan_ble"; // 停止掃描
-    }
-
-    public class ScanCallback extends android.bluetooth.le.ScanCallback {
-        @Override
-        public void onScanFailed(int errorCode) {
-            super.onScanFailed(errorCode);
-        }
-
-        @Override
-        public void onBatchScanResults(List<ScanResult> results) {
-            for (ScanResult result : results) {
-                onLeScan(result);
-            }
-        }
-
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            onLeScan(result);
-        }
-
-        private void onLeScan(ScanResult scanResult) {
-//            String name = scanResult.getDevice().getName();
-//            if (!TextUtils.isEmpty(mBlufiFilter)) {
-//                if (name == null || !name.startsWith(mBlufiFilter)) {
-//                    return;
-//                }
-//            }
-            String addr = scanResult.getDevice().getAddress();
-            // 去重，所以用 Map
-            mDeviceMap.put(addr, scanResult);
-            if (realCallback) {
-                Message message = new Message();
-                message.what = 3;
-                Bundle bundle = new Bundle();
-                bundle.putString("v", devicesJSON(addr));
-                message.setData(bundle);
-                handler.sendMessage(message);
-            }
-        }
-    }
 }
