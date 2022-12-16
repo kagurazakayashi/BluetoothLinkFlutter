@@ -15,6 +15,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 藍芽掃描回撥
+ *
+ * @author 神楽坂雅詩
+ * @version 1.0.0
+ */
 public class ScanCallback extends android.bluetooth.le.ScanCallback {
     public Handler handler;
     public final Map<String, ScanResult> mDeviceMap;
@@ -54,9 +60,9 @@ public class ScanCallback extends android.bluetooth.le.ScanCallback {
      * 發現藍芽裝置廣播時的回撥
      *
      * @param callbackType 確定如何觸發此回撥。 可能是其中之一：
-     *                     - {@link ScanSettings#CALLBACK_TYPE_ALL_MATCHES}
-     *                     - {@link ScanSettings#CALLBACK_TYPE_FIRST_MATCH}
-     *                     - {@link ScanSettings#CALLBACK_TYPE_MATCH_LOST}
+     *                     - {ScanSettings#CALLBACK_TYPE_ALL_MATCHES}
+     *                     - {ScanSettings#CALLBACK_TYPE_FIRST_MATCH}
+     *                     - {ScanSettings#CALLBACK_TYPE_MATCH_LOST}
      * @param result       藍芽掃描結果
      */
     @Override
