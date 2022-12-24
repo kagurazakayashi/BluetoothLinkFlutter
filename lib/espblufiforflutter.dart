@@ -1,16 +1,25 @@
+import 'dart:convert';
+
+import 'package:espblufiforflutter/data_structure/bluetooth_device_information.dart';
 import 'package:flutter/services.dart';
 
 import 'espblufiforflutter_platform_interface.dart';
 
-abstract class EspblufiforflutterDelegate {
-  espblufiforflutterVersionDelegate(Map? info);
+abstract class EspblufiforflutterDelegateVersion {
+  espblufiforflutterDelegateOSVersion(Map? info);
+}
+
+abstract class EspblufiforflutterDelegateScan {
+  espblufiforflutterScanBtDevicesDelegate(List<BluetoothDeviceInformation> infos);
+  espblufiforflutterScanBtStatusDelegate(String info);
 }
 
 class Espblufiforflutter {
   // Future<String?> getPlatformVersion() {
   //   return EspblufiforflutterPlatform.instance.getPlatformVersion();
   // }
-  EspblufiforflutterDelegate? delegateVersion;
+  EspblufiforflutterDelegateVersion? delegateVersion;
+  EspblufiforflutterDelegateScan? delegateScan;
   // 向原生髮送通知，原生可以回覆該通知
   final MethodChannel _methodChannel = const MethodChannel('flutter_to_native');
   // 接收原生隨時傳送的通知
@@ -24,9 +33,9 @@ class Espblufiforflutter {
 
   // 【非同步】收到原生隨時發來的通知，event 是原生傳回來的資料
   eventChannelData(event) {
-    print("== native ==");
-    print(event);
-    print("== /native ==");
+    // print("== native ==");
+    // print(event);
+    // print("== /native ==");
     // 可以是 Map 也可以是 String 等其他
     Map arguments = event;
     if (delegateVersion == null) {
@@ -34,8 +43,33 @@ class Espblufiforflutter {
     }
     switch (arguments["k"]) {
       case "getPlatformVersion":
-        delegateVersion!.espblufiforflutterVersionDelegate(arguments);
+        delegateVersion?.espblufiforflutterDelegateOSVersion(arguments);
         break;
+      case "scan_bt_devices":
+        {
+          switch (arguments["t"]) {
+            case "list":
+              {
+                List<BluetoothDeviceInformation> infos = [];
+                List<dynamic> btInfo = jsonDecode(arguments["v"]);
+
+                for (Map<String, dynamic> bti in btInfo) {
+                  print(bti);
+                  BluetoothDeviceInformation nowble = BluetoothDeviceInformation(bti);
+                  infos.add(nowble);
+                }
+                delegateScan?.espblufiforflutterScanBtDevicesDelegate(infos);
+                break;
+              }
+            case "stat":
+              {
+                delegateScan?.espblufiforflutterScanBtStatusDelegate(arguments["v"]);
+                break;
+              }
+            default:
+          }
+          break;
+        }
       default:
         break;
     }
@@ -45,16 +79,23 @@ class Espblufiforflutter {
   Future<Map?> getPlatformVersion() async {
     // 可以是 Map 也可以是 String 等其他
     // 【同步】await 是等待它執行結束，直接拿到原生的返回值
-    // final Map? info = await _methodChannel.invokeMethod('getPlatformVersion');
+    final Map? info = await _methodChannel.invokeMethod('getPlatformVersion');
+  }
+
+  String boolToString(bool value) {
+    return value ? "true" : "false";
+  }
+
+  Future<Map?> scanBtDevices({int timeout = 10000, int interval = 1000, bool real = false}) async {
     /*
     - `timeout` (Long): 藍芽搜尋超時時間（毫秒，預設10秒）
     - `interval` (Long): 返回資料間隔時間（毫秒，預設1秒）
     - `real` (Boolean): 是否實時返回掃描到的裝置，預設false
     */
     final Map? info = await _methodChannel.invokeMethod('scan_bt_devices', {
-      "timeout": "10000",
-      "interval": "1000",
-      "real": "false",
+      "timeout": timeout.toString(),
+      "interval": interval.toString(),
+      "real": boolToString(real),
     });
     return info;
   }
