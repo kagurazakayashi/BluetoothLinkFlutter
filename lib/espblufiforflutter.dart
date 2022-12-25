@@ -52,9 +52,8 @@ class Espblufiforflutter {
               {
                 List<BluetoothDeviceInformation> infos = [];
                 List<dynamic> btInfo = jsonDecode(arguments["v"]);
-
                 for (Map<String, dynamic> bti in btInfo) {
-                  print(bti);
+                  // print(bti); // {name: null, address: 4C:9B:13:D7:7C:00, rssi: -72, type: 0, bondState: 10, uuids: null, class: 0, describeContents: 0, hashCode: 1797016041}
                   BluetoothDeviceInformation nowble = BluetoothDeviceInformation(bti);
                   infos.add(nowble);
                 }

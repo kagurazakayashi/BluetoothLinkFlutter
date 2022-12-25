@@ -18,7 +18,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVersion, EspblufiforflutterDelegateScan {
-  String _platformVersion = '';
+  String _title = "蓝牙设备列表";
   final _espblufiforflutterPlugin = Espblufiforflutter();
   List<BluetoothDeviceInformation> _scanBleInfo = [];
 
@@ -26,6 +26,7 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
   void initState() {
     super.initState();
     _espblufiforflutterPlugin.delegateVersion = this;
+    _espblufiforflutterPlugin.delegateScan = this;
     initPlatformState();
   }
 
@@ -37,7 +38,8 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
     - `interval` (Long): 返回資料間隔時間（毫秒，預設1秒）
     - `real` (Boolean): 是否實時返回掃描到的裝置，預設false
     */
-    Map? platformVersion = await _espblufiforflutterPlugin.scanBtDevices(timeout: 1000, interval: 1000, real: false);
+    Map? scanBtDevices = await _espblufiforflutterPlugin.scanBtDevices(timeout: 1000, interval: 1000, real: false);
+    print(scanBtDevices);
 
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
@@ -51,10 +53,20 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
     // message was in flight, we want to discard the reply rather than calling
     // setState to update our non-existent appearance.
     if (!mounted) return;
+  }
 
-    setState(() {
-      _platformVersion += "\n$platformVersion";
-    });
+  Icon signalIcon(int rssi) {
+    if (rssi >= -50) {
+      return const Icon(Icons.signal_wifi_4_bar, color: Colors.green);
+    } else if (rssi >= -70) {
+      return const Icon(Icons.network_wifi_3_bar, color: Colors.blue);
+    } else if (rssi >= -80) {
+      return const Icon(Icons.network_wifi_2_bar, color: Colors.orange);
+    } else if (rssi >= -90) {
+      return const Icon(Icons.network_wifi_1_bar, color: Colors.red);
+    } else {
+      return const Icon(Icons.signal_wifi_statusbar_null, color: Colors.grey);
+    }
   }
 
   @override
@@ -63,7 +75,7 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
       return MaterialApp(
         home: Scaffold(
             appBar: AppBar(
-              title: const Text('Plugin example app'),
+              title: Text(_title),
             ),
             body: _scanBleInfo.isNotEmpty
                 ? ListView.builder(
@@ -88,6 +100,7 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
+                            signalIcon(bleInfo.rssi),
                             Text(bleInfo.rssi.toString()),
                             SizedBox(
                               width: 50.w,
@@ -124,12 +137,14 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
       return;
     }
     setState(() {
-      _platformVersion += "\n$info";
+      _title = "\n$info";
     });
   }
 
   @override
   espblufiforflutterScanBtDevicesDelegate(List<BluetoothDeviceInformation> infos) {
+    print("SCAN START");
+    print(infos);
     // 去除重複的內容
     List<BluetoothDeviceInformation> temp = [];
     for (BluetoothDeviceInformation info in infos) {
@@ -162,7 +177,5 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
   }
 
   @override
-  espblufiforflutterScanBtStatusDelegate(String info) {
-    print("SCAN END");
-  }
+  espblufiforflutterScanBtStatusDelegate(String info) {}
 }
