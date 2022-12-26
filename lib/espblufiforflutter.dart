@@ -98,4 +98,6 @@ class Espblufiforflutter {
     });
     return info;
   }
+
+  Future<Map?> stopScanBtDevices() async {}
 }

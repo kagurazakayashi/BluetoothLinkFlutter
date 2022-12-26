@@ -20,6 +20,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVersion, EspblufiforflutterDelegateScan {
   String _title = "蓝牙设备列表";
   final _espblufiforflutterPlugin = Espblufiforflutter();
+  int _scansec = -1;
   List<BluetoothDeviceInformation> _scanBleInfo = [];
 
   @override
@@ -30,6 +31,24 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
     initPlatformState();
   }
 
+  Future<void> _startScanBtDevices(int sec) async {
+    Map? scanBtDevices = await _espblufiforflutterPlugin.scanBtDevices(timeout: sec * 10, interval: 1000, real: false);
+    if (scanBtDevices != null && scanBtDevices["v"] == "start_scan_ble" && scanBtDevices["k"] == "scan_bt_devices") {
+      const period = Duration(seconds: 1);
+      Timer.periodic(period, (timer) {
+        // 到時回撥
+        _scansec--;
+        if (_scansec <= 0) {
+          timer.cancel();
+        }
+      });
+      setState(() {
+        _scansec = sec;
+      });
+      _scanTitle();
+    }
+  }
+
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     /*
@@ -38,8 +57,7 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
     - `interval` (Long): 返回資料間隔時間（毫秒，預設1秒）
     - `real` (Boolean): 是否實時返回掃描到的裝置，預設false
     */
-    Map? scanBtDevices = await _espblufiforflutterPlugin.scanBtDevices(timeout: 1000, interval: 1000, real: false);
-    print(scanBtDevices);
+    _startScanBtDevices(10);
 
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
@@ -53,6 +71,16 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
     // message was in flight, we want to discard the reply rather than calling
     // setState to update our non-existent appearance.
     if (!mounted) return;
+  }
+
+  void _scanTitle() {
+    setState(() {
+      if (_scansec > 0) {
+        _title = "正在搜索蓝牙设备...";
+      } else {
+        _title = "蓝牙设备列表";
+      }
+    });
   }
 
   Icon signalIcon(int rssi) {
@@ -76,6 +104,34 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
         home: Scaffold(
             appBar: AppBar(
               title: Text(_title),
+              actions: [
+                if (_scansec <= 0)
+                  IconButton(
+                    icon: const Icon(Icons.forward_10),
+                    onPressed: () {
+                      _startScanBtDevices(10);
+                    },
+                  ),
+                if (_scansec <= 0)
+                  IconButton(
+                    icon: const Icon(Icons.forward_30),
+                    onPressed: () {
+                      _startScanBtDevices(30);
+                    },
+                  ),
+                if (_scansec > 0)
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(_scansec.toString()),
+                  ),
+                if (_scansec > 0)
+                  IconButton(
+                    icon: const Icon(Icons.stop),
+                    onPressed: () {
+                      _espblufiforflutterPlugin.stopScanBtDevices();
+                    },
+                  ),
+              ],
             ),
             body: _scanBleInfo.isNotEmpty
                 ? ListView.builder(
@@ -177,5 +233,10 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
   }
 
   @override
-  espblufiforflutterScanBtStatusDelegate(String info) {}
+  espblufiforflutterScanBtStatusDelegate(String info) {
+    setState(() {
+      _scansec = 0;
+    });
+    _scanTitle();
+  }
 }
