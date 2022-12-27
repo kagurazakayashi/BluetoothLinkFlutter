@@ -1,4 +1,4 @@
-name: espblufiforflutter
+name: bluetoothlinkflutter
 description: A new Flutter plugin project.
 version: 0.0.1
 homepage:
@@ -35,10 +35,10 @@ flutter:
   plugin:
     platforms:
       android:
-        package: moe.uuu.espblufiforflutter
-        pluginClass: EspblufiforflutterPlugin
+        package: moe.uuu.bluetoothlinkflutter
+        pluginClass: bluetoothlinkflutterPlugin
       ios:
-        pluginClass: EspblufiforflutterPlugin
+        pluginClass: bluetoothlinkflutterPlugin
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:

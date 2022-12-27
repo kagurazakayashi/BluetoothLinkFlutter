@@ -1,4 +1,4 @@
-group 'moe.uuu.espblufiforflutter'
+group 'moe.uuu.bluetoothlinkflutter'
 version '1.0'
 
 buildscript {

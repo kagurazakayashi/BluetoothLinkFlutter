@@ -1,9 +1,9 @@
-import 'package:espblufiforflutter/data_structure/bluetooth_device_information.dart';
+import 'package:bluetoothlinkflutter/data_structure/bluetooth_device_information.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:espblufiforflutter/espblufiforflutter.dart';
+import 'package:bluetoothlinkflutter/bluetoothlinkflutter.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 
 void main() {
@@ -17,22 +17,22 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVersion, EspblufiforflutterDelegateScan {
+class _MyAppState extends State<MyApp> implements bluetoothlinkflutterDelegateVersion, bluetoothlinkflutterDelegateScan {
   String _title = "蓝牙设备列表";
-  final _espblufiforflutterPlugin = Espblufiforflutter();
+  final _bluetoothlinkflutterPlugin = bluetoothlinkflutter();
   int _scansec = -1;
   List<BluetoothDeviceInformation> _scanBleInfo = [];
 
   @override
   void initState() {
     super.initState();
-    _espblufiforflutterPlugin.delegateVersion = this;
-    _espblufiforflutterPlugin.delegateScan = this;
+    _bluetoothlinkflutterPlugin.delegateVersion = this;
+    _bluetoothlinkflutterPlugin.delegateScan = this;
     initPlatformState();
   }
 
   Future<void> _startScanBtDevices(int sec) async {
-    Map? scanBtDevices = await _espblufiforflutterPlugin.scanBtDevices(timeout: sec * 10, interval: 1000, real: false);
+    Map? scanBtDevices = await _bluetoothlinkflutterPlugin.scanBtDevices(timeout: sec * 10, interval: 1000, real: false);
     if (scanBtDevices != null && scanBtDevices["v"] == "start_scan_ble" && scanBtDevices["k"] == "scan_bt_devices") {
       const period = Duration(seconds: 1);
       Timer.periodic(period, (timer) {
@@ -62,7 +62,7 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
     // try {
-    //   platformVersion = await _espblufiforflutterPlugin.getPlatformVersion();
+    //   platformVersion = await _bluetoothlinkflutterPlugin.getPlatformVersion();
     // } on PlatformException {
     //   platformVersion = 'Failed to get platform version.';
     // }
@@ -128,7 +128,7 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
                   IconButton(
                     icon: const Icon(Icons.stop),
                     onPressed: () {
-                      _espblufiforflutterPlugin.stopScanBtDevices();
+                      _bluetoothlinkflutterPlugin.stopScanBtDevices();
                     },
                   ),
               ],
@@ -188,7 +188,7 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
   }
 
   @override
-  espblufiforflutterDelegateOSVersion(Map? info) {
+  bluetoothlinkflutterDelegateOSVersion(Map? info) {
     if (info == null) {
       return;
     }
@@ -198,7 +198,7 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
   }
 
   @override
-  espblufiforflutterScanBtDevicesDelegate(List<BluetoothDeviceInformation> infos) {
+  bluetoothlinkflutterScanBtDevicesDelegate(List<BluetoothDeviceInformation> infos) {
     print("SCAN START");
     print(infos);
     // 去除重複的內容
@@ -233,7 +233,7 @@ class _MyAppState extends State<MyApp> implements EspblufiforflutterDelegateVers
   }
 
   @override
-  espblufiforflutterScanBtStatusDelegate(String info) {
+  bluetoothlinkflutterScanBtStatusDelegate(String info) {
     setState(() {
       _scansec = 0;
     });

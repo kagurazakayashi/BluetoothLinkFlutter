@@ -1,6 +1,6 @@
-# espblufiforflutter_example
+# bluetoothlinkflutter_example
 
-Demonstrates how to use the espblufiforflutter plugin.
+Demonstrates how to use the bluetoothlinkflutter plugin.
 
 ## Getting Started
 

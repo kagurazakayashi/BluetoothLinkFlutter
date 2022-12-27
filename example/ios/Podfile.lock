@@ -1,20 +1,20 @@
 PODS:
-  - espblufiforflutter (0.0.1):
+  - bluetoothlinkflutter (0.0.1):
     - Flutter
   - Flutter (1.0.0)
 
 DEPENDENCIES:
-  - espblufiforflutter (from `.symlinks/plugins/espblufiforflutter/ios`)
+  - bluetoothlinkflutter (from `.symlinks/plugins/bluetoothlinkflutter/ios`)
   - Flutter (from `Flutter`)
 
 EXTERNAL SOURCES:
-  espblufiforflutter:
-    :path: ".symlinks/plugins/espblufiforflutter/ios"
+  bluetoothlinkflutter:
+    :path: ".symlinks/plugins/bluetoothlinkflutter/ios"
   Flutter:
     :path: Flutter
 
 SPEC CHECKSUMS:
-  espblufiforflutter: 683d6e21cd82bdccc2a89ca36ded7b17bd5bec48
+  bluetoothlinkflutter: 683d6e21cd82bdccc2a89ca36ded7b17bd5bec48
   Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
 
 PODFILE CHECKSUM: 663715e941f9adb426e33bf9376914006f9ea95b

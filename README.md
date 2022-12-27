@@ -1,4 +1,4 @@
-# EspBlufiForFlutter
+# bluetoothlinkflutter
 
 Flutter APP 与乐鑫 ESP8266/ESP32 蓝牙设备通信插件。
 
@@ -9,13 +9,6 @@ Flutter APP 与乐鑫 ESP8266/ESP32 蓝牙设备通信插件。
 - 插件中不主动检查和申请权限，请注意需要有以下权限才能运作：
   - 定位：仅在使用中允许
   - 扫描附近的设备：允许
-
-## 引用库
-
-本插件基于以下项目构建：
-
-- [EspressifApp/EspBlufiForAndroid](https://github.com/EspressifApp/EspBlufiForAndroid) v1.6.3
-- [EspressifApp/EspBlufiForiOS](https://github.com/EspressifApp/EspBlufiForiOS) v1.3.1
 
 ## Flutter 与 Native 的交互
 
@@ -62,9 +55,4 @@ Flutter APP 与乐鑫 ESP8266/ESP32 蓝牙设备通信插件。
 
 ## LICENSE
 
-- [kagurazakayashi/EspBlufiForFlutter LICENSE](LICENSE)
-
-EspBlufi is based on the BLUFI protocol, which connect with IOT devices for BLE data communication, realizes device config network, and custom data transmission and reception. EspBlufiForAndroid/EspBlufiForiOS is developed and maintained by Espressif Corp.
-
-- [EspressifApp/EspBlufiForAndroid LICENSE](https://github.com/EspressifApp/EspBlufiForAndroid/blob/master/LICENSE)
-- [EspressifApp/EspBlufiForiOS LICENSE](https://github.com/EspressifApp/EspBlufiForiOS/blob/master/LICENSE.txt)
+Copyright (c) 2022 KagurazakaYashi bluetoothlinkflutter is licensed under Mulan PSL v2. You can use this software according to the terms and conditions of the Mulan PSL v2. You may obtain a copy of Mulan PSL v2 at: http://license.coscl.org.cn/MulanPSL2 THIS SOFTWARE IS PROVIDED ON AN “AS IS” BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE. See the Mulan PSL v2 for more details.

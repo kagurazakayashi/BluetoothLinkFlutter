@@ -362,7 +362,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = moe.uuu.espblufiforflutterExample;
+				PRODUCT_BUNDLE_IDENTIFIER = moe.uuu.bluetoothlinkflutterExample;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = Yashi_iOSDevelopment_uuumoe_20230209;
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = Yashi_iOSDevelopment_uuumoe_20230209;
@@ -490,7 +490,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = moe.uuu.espblufiforflutterExample;
+				PRODUCT_BUNDLE_IDENTIFIER = moe.uuu.bluetoothlinkflutterExample;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = Yashi_iOSDevelopment_uuumoe_20230209;
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = Yashi_iOSDevelopment_uuumoe_20230209;
@@ -513,7 +513,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = moe.uuu.espblufiforflutterExample;
+				PRODUCT_BUNDLE_IDENTIFIER = moe.uuu.bluetoothlinkflutterExample;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = Yashi_iOSDevelopment_uuumoe_20230209;
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = Yashi_iOSDevelopment_uuumoe_20230209;
